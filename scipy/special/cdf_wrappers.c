@@ -24,6 +24,21 @@
 #endif
 #endif
 
+#ifdef WITH_THREAD 
+#define GIL_LOCK             \
+PyGILState_STATE save;       \
+save = PyGILState_Ensure(); 
+#else
+#define GIL_LOCK
+#endif          
+
+#ifdef WITH_THREAD 
+#define GIL_UNLOCK             \
+PyGILState_Release(save);
+#else
+#define GIL_UNLOCK
+#endif          
+
 /*
  * Call macros for different numbers of distribution parameters.
  */
@@ -32,15 +47,19 @@
     if (isnan(p) || isnan(q) || isnan(a) || isnan(b) || isnan(bound)) { \
         return NAN;                                                     \
     }                                                                   \
+    GIL_LOCK                                                            \
     func(&which, &p, &q, &a, &b, &status, &bound);                      \
-    return get_result(name, status, bound, result, return_bound)
+    GIL_UNLOCK                                                          \
+    return get_result(name, status, bound, result, return_bound)        
 
 #define CDFLIB_CALL3(func, name, a, b, c, result, return_bound)         \
     if (isnan(p) || isnan(q) || isnan(a) || isnan(b) ||                 \
         isnan(c) || isnan(bound)) {                                     \
         return NAN;                                                     \
     }                                                                   \
+    GIL_LOCK                                                            \
     func(&which, &p, &q, &a, &b, &c, &status, &bound);                  \
+    GIL_UNLOCK                                                          \
     return get_result(name, status, bound, result, return_bound)
 
 #define CDFLIB_CALL4(func, name, a, b, c, d, result, return_bound)      \
@@ -48,7 +67,9 @@
         isnan(c) || isnan(d) || isnan(bound)) {                         \
         return NAN;                                                     \
     }                                                                   \
+    GIL_LOCK                                                            \
     func(&which, &p, &q, &a, &b, &c, &d, &status, &bound);              \
+    GIL_UNLOCK                                                          \
     return get_result(name, status, bound, result, return_bound)
 
 
